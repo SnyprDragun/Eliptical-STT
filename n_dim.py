@@ -534,7 +534,7 @@ class STT_Solver():
             ax.scatter(points[:,0], points[:,1], points[:,2], s=2)
 
 
-solver = STT_Solver(3, 3, 0.1, [0.5, 1], [0.8, 1.5], [0.8, 1.5])
+solver = STT_Solver(3, 3, 0.5, [0.5, 1], [0.8, 1.5], [0.8, 1.5])
 
 
 def reach(*args):
@@ -593,40 +593,56 @@ def reach(*args):
     solver.displayTime(start, end)
     return all_constraints
 
-def avoid(x1, x2, y1, y2, z1, z2, t1, t2):
-    solver.obstacles.append([x1, x2, y1, y2, z1, z2, t1, t2])
-    all_constraints = []
+def avoid(*args):
+    """
+    args = [x1, x2, y1, y2, ..., z1, z2, t1, t2]
+    Total args = 2 * dimension + 2
+    """
+    dim = solver.dimension
+    assert len(args) == 2 * dim + 2, f"Expected {2*dim+2} arguments, got {len(args)}"
+    bounds_flat = args[:-2]  # all spatial bounds
+    t1, t2 = args[-2], args[-1]
+    solver.obstacles.append(list(args))
+
+    # Convert bounds into [(min, max), (min, max), ...] for each dimension
+    bounds = [(bounds_flat[i], bounds_flat[i + 1]) for i in range(0, 2 * dim, 2)]
+
     t_values = np.arange(t1, t2, solver._step)
-    lambda_low = 0
-    lambda_mid = 0.5
-    lambda_high = 1
+    all_constraints = []
 
     for t in t_values:
-        gamma = solver.gammas(t)
-        gamma1_L = gamma[0]
-        gamma2_L = gamma[1]
-        gamma3_L = gamma[2]
-        gamma1_U = gamma[3]
-        gamma2_U = gamma[4]
-        gamma3_U = gamma[5]
+        for dim in range(solver.dimension):
+            lower, upper = bounds[dim]
+            constraint = z3.Or(solver.gammas(t)[dim] < lower, solver.gammas(t)[dim] > upper)
+            all_constraints.append(constraint)
 
-        x_low = (lambda_low * gamma1_L + (1 - lambda_low) * gamma1_U)
-        y_low = (lambda_low * gamma2_L + (1 - lambda_low) * gamma2_U)
-        z_low = (lambda_low * gamma3_L + (1 - lambda_low) * gamma3_U)
-        constraint_low = z3.Or(z3.Or(x_low>x2, x_low<x1), z3.Or(y_low>y2, y_low<y1), z3.Or(z_low>z2, z_low<z1))
-        all_constraints.append(constraint_low)
+            #---------- ellipse boundary point constraint ----------#
+            # for xi in range(solver.dimension):
+            """
+            Generates a list of Z3 expressions x_i = a_i * u_i + c_i
+            axis_lengths and centers are symbolic variables
+            """
+            # el_bound = solver.gammas(t)[dim] + solver.an_exp(t)[f'a{dim}'] #+ sin/cos term
+            # constraint = z3.And(el_bound > lower, el_bound < upper)
 
-        x_mid = (lambda_mid * gamma1_L + (1 - lambda_mid) * gamma1_U)
-        y_mid = (lambda_mid * gamma2_L + (1 - lambda_mid) * gamma2_U)
-        z_mid = (lambda_mid * gamma3_L + (1 - lambda_mid) * gamma3_U)
-        constraint_mid = z3.Or(z3.Or(x_mid>x2, x_mid<x1), z3.Or(y_mid>y2, y_mid<y1), z3.Or(z_mid>z2, z_mid<z1))
-        all_constraints.append(constraint_mid)
+            theta_grid = solver.sample_theta_grid(step_deg=15)
 
-        x_high = (lambda_high * gamma1_L + (1 - lambda_high) * gamma1_U)
-        y_high = (lambda_high * gamma2_L + (1 - lambda_high) * gamma2_U)
-        z_high = (lambda_high * gamma3_L + (1 - lambda_high) * gamma3_U)
-        constraint_high = z3.Or(z3.Or(x_high>x2, x_high<x1), z3.Or(y_high>y2, y_high<y1), z3.Or(z_high>z2, z_high<z1))
-        all_constraints.append(constraint_high)
+            symbolic_points = []
+            for thetas in theta_grid:
+                u = solver.generate_u_thetas(thetas)  # numerical vector
+                expr_point = [solver.an_exp(t)[f'a{dim+1}'] * u[dim] + solver.gammas(t)[dim]]
+                symbolic_points.append(expr_point)
+
+            # print("CHECK: final", symbolic_points[0][1])
+
+            # Return dict of expressions by axis
+            coord_dict = {f'x{dim+1}': [p for p in symbolic_points]}
+            coord_name = f'x{dim+1}'          # e.g., x1, x2, x3...
+
+            for point_val in coord_dict[coord_name]:
+                # print(len(point_val))
+                constraint = z3.Or(point_val[0] <= lower, point_val[0] >= upper)
+                all_constraints.append(constraint)
 
     print("Added Avoid Constraints: ", solver.obstacles)
     end = time.time()
@@ -637,10 +653,14 @@ def avoid(x1, x2, y1, y2, z1, z2, t1, t2):
 start = time.time()
 
 S_constraints_list = reach(0, 3, 0, 3, 0, 3, 0, 1)
+O_constraints_list = avoid(3.5, 4.5, 3.5, 4.5, 3.5, 4.5, 3, 4)
 G_constraints_list = reach(5, 8, 5, 8, 5, 8, 5, 6)
 
 for S in S_constraints_list:
     solver.solver.add(S)
+
+for O in O_constraints_list:
+    solver.solver.add(O)
 
 for G in G_constraints_list:
     solver.solver.add(G)

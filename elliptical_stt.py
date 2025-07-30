@@ -325,6 +325,7 @@ class STT_Solver():
 
 solver = STT_Solver(degree=5, dimension=2, time_step=0.1, semi_minor_axis_range=[0.01, 0.5], semi_major_axis_range=[0.01, 0.5])
 
+
 def reach(x1, x2, y1, y2, t1, t2):
     solver.setpoints.append([x1, x2, y1, y2, t1, t2])
     all_constraints = []
@@ -352,40 +353,23 @@ def reach(x1, x2, y1, y2, t1, t2):
     solver.displayTime(start, end)
     return all_constraints
 
-def avoid(x1, x2, y1, y2, z1, z2, t1, t2):
-    solver.obstacles.append([x1, x2, y1, y2, z1, z2, t1, t2])
+def avoid(x1, x2, y1, y2, t1, t2):
+    solver.obstacles.append([x1, x2, y1, y2, t1, t2])
     all_constraints = []
     t_values = np.arange(t1, t2, solver._step)
-    lambda_low = 0
-    lambda_mid = 0.5
-    lambda_high = 1
+    para_T_values = np.arange(0, 2 * math.pi, solver._step)
 
     for t in t_values:
         gamma = solver.gammas(t)
-        gamma1_L = gamma[0]
-        gamma2_L = gamma[1]
-        gamma3_L = gamma[2]
-        gamma1_U = gamma[3]
-        gamma2_U = gamma[4]
-        gamma3_U = gamma[5]
+        gamma_x = gamma[0]
+        gamma_y = gamma[1]
 
-        x_low = (lambda_low * gamma1_L + (1 - lambda_low) * gamma1_U)
-        y_low = (lambda_low * gamma2_L + (1 - lambda_low) * gamma2_U)
-        z_low = (lambda_low * gamma3_L + (1 - lambda_low) * gamma3_U)
-        constraint_low = z3.Or(z3.Or(x_low>x2, x_low<x1), z3.Or(y_low>y2, y_low<y1), z3.Or(z_low>z2, z_low<z1))
-        all_constraints.append(constraint_low)
+        constraint_xy_sat = z3.Or(z3.Or(gamma_x < x1, gamma_x > x2), z3.Or(gamma_y < y1, gamma_y > y2))
+        all_constraints.append(constraint_xy_sat)
 
-        x_mid = (lambda_mid * gamma1_L + (1 - lambda_mid) * gamma1_U)
-        y_mid = (lambda_mid * gamma2_L + (1 - lambda_mid) * gamma2_U)
-        z_mid = (lambda_mid * gamma3_L + (1 - lambda_mid) * gamma3_U)
-        constraint_mid = z3.Or(z3.Or(x_mid>x2, x_mid<x1), z3.Or(y_mid>y2, y_mid<y1), z3.Or(z_mid>z2, z_mid<z1))
-        all_constraints.append(constraint_mid)
-
-        x_high = (lambda_high * gamma1_L + (1 - lambda_high) * gamma1_U)
-        y_high = (lambda_high * gamma2_L + (1 - lambda_high) * gamma2_U)
-        z_high = (lambda_high * gamma3_L + (1 - lambda_high) * gamma3_U)
-        constraint_high = z3.Or(z3.Or(x_high>x2, x_high<x1), z3.Or(y_high>y2, y_high<y1), z3.Or(z_high>z2, z_high<z1))
-        all_constraints.append(constraint_high)
+        for para_T in para_T_values:
+            constraint_xy = z3.Or(z3.Or((((solver.major_axis_length * math.cos(para_T)) / 2) + gamma_x) < x1, (((solver.major_axis_length * math.cos(para_T)) / 2) + gamma_x) > x2 ), z3.Or((((solver.minor_axis_length * math.sin(para_T)) / 2) + gamma_y) < y1, (((solver.minor_axis_length * math.sin(para_T)) / 2) + gamma_y) > y2 ))
+            all_constraints.append(constraint_xy)
 
     print("Added Avoid Constraints: ", solver.obstacles)
     end = time.time()
@@ -396,18 +380,16 @@ def avoid(x1, x2, y1, y2, z1, z2, t1, t2):
 start = time.time()
 
 S_constraints_list = reach(0, 3, 0, 3, 0, 1)
+O_constraints_list = avoid(3.5, 4.5, 3.5, 4.5, 3, 4)
 G_constraints_list = reach(5, 8, 5, 8, 5, 6)
 
 for S in S_constraints_list:
     solver.solver.add(S)
 
+for O in O_constraints_list:
+    solver.solver.add(O)
+
 for G in G_constraints_list:
     solver.solver.add(G)
 
 solver.find_solution()
-
-
-#------------------- STUFF TO DO -------------------#
-# 1. change a,b to time varying
-# 2. try dim=3
-# 3. 
