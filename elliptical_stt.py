@@ -1,4 +1,4 @@
-#!/Users/subhodeep/venv/bin/python
+#!/Users/subhodeep/venv/bin/python3
 '''script for `Rotating Rigid Spacecraft` example'''
 import z3
 import csv
