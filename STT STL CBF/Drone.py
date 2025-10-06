@@ -255,7 +255,7 @@ class STT_Solver():
         else:
             ax.set_title(f"{dim}D Ellipsoid (First 3D Projection)")
 
-        t_values = np.arange(self._start, self._finish, solver._step)
+        t_values = np.arange(self._start, self._finish, self._step)
         for t in t_values:
             axis_lengths = [self.an_exp_real(t)[f'a{dim+1}'] for dim in range(self.dimension)]
             center = self.real_gammas(t, self.C_solved)
@@ -315,6 +315,8 @@ class STT_Solver():
             end = time.time()
             self.displayTime(start, end)
 
+        return self.C_solved
+
     def store_csv(self, C_list, an_dict):
         """
         Save C_list and an_dict into a CSV file in the specified format.
@@ -357,7 +359,7 @@ class STT_Solver():
         print(tabulate(rows, headers=header, tablefmt='grid'))
 
         # Write to CSV
-        with open(filename, mode='w', newline='') as f:
+        with open(filename, mode='a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(header)
             writer.writerows(rows)
@@ -533,11 +535,14 @@ class STT_Solver():
             # For n > 3, show first 3 dims as 3D projection
             ax.scatter(points[:,0], points[:,1], points[:,2], s=2)
 
+    def join_constraint(self, prev_tube, prev_solver, prev_t_end):
+        for i in range(self.dimension):
+            self.solver.add(self.gammas(prev_t_end)[i] == prev_solver.real_gammas(prev_t_end, prev_tube)[i])
+            self.solver.add(self.gamma_dot(prev_t_end)[i] == prev_solver.real_gamma_dot(prev_t_end, prev_tube)[i])
+            self.solver.add(self.an_exp(prev_t_end)[f'a{i+1}'] == prev_solver.an_exp_real(prev_t_end)[f'a{i+1}'])
 
-solver = STT_Solver(3, 3, 0.5, [0.5, 1], [0.8, 1.5], [0.8, 1.5])
 
-
-def reach(*args):
+def reach(solver, *args):
     """
     args = [x1, x2, y1, y2, ..., z1, z2, t1, t2]
     Total args = 2 * dimension + 2
@@ -593,7 +598,7 @@ def reach(*args):
     solver.displayTime(start, end)
     return all_constraints
 
-def avoid(*args):
+def avoid(solver, *args):
     """
     args = [x1, x2, y1, y2, ..., z1, z2, t1, t2]
     Total args = 2 * dimension + 2
@@ -652,17 +657,136 @@ def avoid(*args):
 
 start = time.time()
 
-S_constraints_list = reach(0, 3, 0, 3, 0, 3, 0, 1)
-O_constraints_list = avoid(3.5, 4.5, 3.5, 4.5, 3.5, 4.5, 3, 4)
-G_constraints_list = reach(5, 8, 5, 8, 5, 8, 5, 6)
+#----------------------------------------------------------------------------#
+#---------------------------------- TUBE 1 ----------------------------------#
+solver1 = STT_Solver(3, 3, 0.3, [0.5, 1], [0.8, 1.5], [0.8, 1.5])
+
+S_constraints_list = reach(solver1, 0, 3, 0, 3, 0, 3, 0, 1)
+T1_constraints_list = reach(solver1, 6, 9, 6, 9, 6, 9, 3, 4)
 
 for S in S_constraints_list:
-    solver.solver.add(S)
+    solver1.solver.add(S)
 
-for O in O_constraints_list:
-    solver.solver.add(O)
+for T1 in T1_constraints_list:
+    solver1.solver.add(T1)
+
+tube1 = solver1.find_solution()
+
+#----------------------------------------------------------------------------#
+#---------------------------------- TUBE 2 ----------------------------------#
+solver2 = STT_Solver(4, 3, 0.3, [0.5, 1], [0.8, 1.5], [0.8, 1.5])
+
+T1_constraints_list = reach(solver2, 6, 9, 6, 9, 6, 9, 3, 4)
+G_constraints_list = reach(solver2, 12, 15, 12, 15, 12, 15, 6, 7)
+
+for T1 in T1_constraints_list:
+    solver2.solver.add(T1)
 
 for G in G_constraints_list:
-    solver.solver.add(G)
+    solver2.solver.add(G)
 
-solver.find_solution()
+solver2.join_constraint(tube1, solver1, 3)
+tube2 = solver2.find_solution()
+
+#----------------------------------------------------------------------------#
+#---------------------------------- TUBE 3 ----------------------------------#
+solver3 = STT_Solver(4, 3, 0.3, [0.5, 1], [0.8, 1.5], [0.8, 1.5])
+
+T1_constraints_list = reach(solver3, 6, 9, 6, 9, 6, 9, 3, 4)
+G_constraints_list = reach(solver3, 12, 15, 12, 15, 12, 15, 6, 7)
+
+for T1 in T1_constraints_list:
+    solver3.solver.add(T1)
+
+for G in G_constraints_list:
+    solver3.solver.add(G)
+
+solver3.join_constraint(tube2, solver2, 3)
+tube3 = solver3.find_solution()
+#----------------------------------------------------------------------------#
+
+tubes = [[tube1, 0, 4],
+         [tube2, 3, 7],
+         [tube3, 3, 7]
+        ]
+
+
+def real_gammas(t, C_fin):
+        '''method to calculate tube equations'''
+        real_tubes = np.zeros(3)
+        degree = int((len(C_fin) / (3)) - 1)
+
+        for i in range(3):
+            power = 0
+            for j in range(degree + 1): #each tube eq has {degree+1} terms
+                real_tubes[i] += ((C_fin[j + i * (degree + 1)]) * (t ** power))
+                power += 1
+        return real_tubes
+
+def real_gamma_dot(t, C_fin):
+    '''method to calculate tube equations'''
+    real_tubes = np.zeros(3)
+    degree = int((len(C_fin) / (3)) - 1)
+
+    for i in range(3):
+        power = 0
+        for j in range(degree + 1):
+            if power < 1:
+                real_tubes[i] += 0
+                power += 1
+            else:
+                real_tubes[i] += power * ((C_fin[j + i * (degree + 1)]) * (t ** (power - 1)))
+                power += 1
+    return real_tubes
+
+def tube_plotter(C_array):
+    fig, axs = plt.subplots(3, 1, figsize=(8, 8), constrained_layout=True)
+    ax, bx, cx= axs
+
+    for tube in C_array:
+        step = 0.1
+        start = tube[1]
+        end = tube[2]
+        time_range = int((end - start + step)/step)
+
+        x = np.zeros(time_range)
+        y = np.zeros(time_range)
+        z = np.zeros(time_range)
+
+        gd_x = np.zeros(time_range)
+        gd_y = np.zeros(time_range)
+        gd_z = np.zeros(time_range)
+
+        for i in range(time_range):
+            tube_gamma = real_gammas(start + i * step, tube[0])
+            x[i] = tube_gamma[0]
+            y[i] = tube_gamma[1]
+            z[i] = tube_gamma[2]
+
+            tube_gamma_dot = real_gamma_dot(start + i * step, tube[0])
+            gd_x[i] = tube_gamma_dot[0]
+            gd_y[i] = tube_gamma_dot[1]
+            gd_z[i] = tube_gamma_dot[2]
+
+        # for i in setpoints:        # t1    x1/y1   t2     t1   x2/y2  x1/y1
+        #     square_x = patches.Rectangle((i[4], i[0]), i[5] - i[4], i[1] - i[0], edgecolor='green', facecolor='none')
+        #     square_y = patches.Rectangle((i[4], i[2]), i[5] - i[4], i[3] - i[2], edgecolor='green', facecolor='none')
+        #     ax.add_patch(square_x)
+        #     bx.add_patch(square_y)
+
+        # for i in obstacles:        # t1    x1/y1   t2     t1   x2/y2  x1/y1
+        #     square_x = patches.Rectangle((i[4], i[0]), i[5] - i[4], i[1] - i[0], edgecolor='red', facecolor='none')
+        #     square_y = patches.Rectangle((i[4], i[2]), i[5] - i[4], i[3] - i[2], edgecolor='red', facecolor='none')
+        #     ax.add_patch(square_x)
+        #     bx.add_patch(square_y)
+
+        t = np.linspace(start, end, time_range)
+        print("range: ", time_range, "\nstart: ", start, "\nfinish: ", end, "\nstep: ", step)
+
+        ax.plot(t, x)
+        bx.plot(t, y)
+        cx.plot(t, z)
+
+    plt.show()
+
+tube_plotter(tubes)
