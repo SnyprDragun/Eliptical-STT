@@ -534,14 +534,16 @@ class STT_Solver():
             ax.scatter(points[:,0], points[:,1], points[:,2], s=2)
 
 
-solver = STT_Solver(3, 3, 0.5, [0.5, 1], [0.8, 1.5], [0.8, 1.5])
-
+# solver = STT_Solver(3, 3, 0.5, [0.5, 1], [0.8, 1.5], [0.8, 1.5])
+solver = STT_Solver(4, 2, 0.2, [0.5, 0.5], [0.5, 0.5])
 
 def reach(*args):
     """
-    args = [x1, x2, y1, y2, ..., z1, z2, t1, t2]
-    Total args = 2 * dimension + 2
+    args = [x1, x2, y1, y2, ..., t1, t2]
+    Total args = 2 * dimension + 2.
+    Constraint: The ellipsoid must be fully contained within the box [x1, x2] x [y1, y2] x ...
     """
+    start = time.time() # Assuming start is defined here for timing
     dim = solver.dimension
     assert len(args) == 2 * dim + 2, f"Expected {2*dim+2} arguments, got {len(args)}"
     bounds_flat = args[:-2]  # all spatial bounds
@@ -552,41 +554,38 @@ def reach(*args):
     bounds = [(bounds_flat[i], bounds_flat[i + 1]) for i in range(0, 2 * dim, 2)]
 
     t_values = np.arange(t1, t2, solver._step)
+    theta_grid = solver.sample_theta_grid(step_deg=15)
     all_constraints = []
 
     for t in t_values:
-        for dim in range(solver.dimension):
-            lower, upper = bounds[dim]
-            constraint = z3.And(solver.gammas(t)[dim] > lower, solver.gammas(t)[dim] < upper)
-            all_constraints.append(constraint)
+        gamma_t = solver.gammas(t)
+        
+        # 1. Constraint for the center point (gamma)
+        gamma_constraints = []
+        for d in range(dim):
+            lower, upper = bounds[d]
+            # Must satisfy: lower < gamma_d < upper for ALL dimensions d
+            gamma_constraints.append(z3.And(gamma_t[d] > lower, gamma_t[d] < upper))
+        
+        # Combine all dimensional constraints for the center point into a single z3.And
+        all_constraints.append(z3.And(gamma_constraints))
 
-            #---------- ellipse boundary point constraint ----------#
-            # for xi in range(solver.dimension):
-            """
-            Generates a list of Z3 expressions x_i = a_i * u_i + c_i
-            axis_lengths and centers are symbolic variables
-            """
-            # el_bound = solver.gammas(t)[dim] + solver.an_exp(t)[f'a{dim}'] #+ sin/cos term
-            # constraint = z3.And(el_bound > lower, el_bound < upper)
+        # 2. Constraint for sampled points on the ellipsoid boundary
+        for thetas in theta_grid:
+            u = solver.generate_u_thetas(thetas)  # numerical vector for unit sphere
+            boundary_point_constraints = []
+            
+            # The coordinates of a boundary point P are P_d = a_d * u_d + gamma_d
+            for d in range(dim):
+                lower, upper = bounds[d]
+                # P_d expression: a_{d+1} is used because 'a' indexing starts at 1 in solver.an_exp
+                P_d = solver.an_exp(t)[f'a{d+1}'] * u[d] + gamma_t[d]
+                
+                # Must satisfy: lower < P_d < upper for ALL dimensions d for this point P
+                boundary_point_constraints.append(z3.And(P_d > lower, P_d < upper))
 
-            theta_grid = solver.sample_theta_grid(step_deg=15)
-
-            symbolic_points = []
-            for thetas in theta_grid:
-                u = solver.generate_u_thetas(thetas)  # numerical vector
-                expr_point = [solver.an_exp(t)[f'a{dim+1}'] * u[dim] + solver.gammas(t)[dim]]
-                symbolic_points.append(expr_point)
-
-            # print("CHECK: final", symbolic_points[0][1])
-
-            # Return dict of expressions by axis
-            coord_dict = {f'x{dim+1}': [p for p in symbolic_points]}
-            coord_name = f'x{dim+1}'          # e.g., x1, x2, x3...
-
-            for point_val in coord_dict[coord_name]:
-                # print(len(point_val))
-                constraint = z3.And(point_val[0] >= lower, point_val[0] <= upper)
-                all_constraints.append(constraint)
+            # Combine all dimensional constraints for this boundary point into a single z3.And
+            all_constraints.append(z3.And(boundary_point_constraints))
 
     print("Added Reach Constraints: ", solver.setpoints)
     end = time.time()
@@ -595,9 +594,12 @@ def reach(*args):
 
 def avoid(*args):
     """
-    args = [x1, x2, y1, y2, ..., z1, z2, t1, t2]
-    Total args = 2 * dimension + 2
+    args = [x1, x2, y1, y2, ..., t1, t2]
+    Total args = 2 * dimension + 2.
+    Constraint: The ellipsoid must NOT overlap with the box [x1, x2] x [y1, y2] x ...
+    (Note: The standard way is that NO part of the path is within the obstacle set.)
     """
+    start = time.time() # Assuming start is defined here for timing
     dim = solver.dimension
     assert len(args) == 2 * dim + 2, f"Expected {2*dim+2} arguments, got {len(args)}"
     bounds_flat = args[:-2]  # all spatial bounds
@@ -608,53 +610,80 @@ def avoid(*args):
     bounds = [(bounds_flat[i], bounds_flat[i + 1]) for i in range(0, 2 * dim, 2)]
 
     t_values = np.arange(t1, t2, solver._step)
+    theta_grid = solver.sample_theta_grid(step_deg=15)
     all_constraints = []
 
     for t in t_values:
-        for dim in range(solver.dimension):
-            lower, upper = bounds[dim]
-            constraint = z3.Or(solver.gammas(t)[dim] < lower, solver.gammas(t)[dim] > upper)
-            all_constraints.append(constraint)
+        gamma_t = solver.gammas(t)
 
-            #---------- ellipse boundary point constraint ----------#
-            # for xi in range(solver.dimension):
-            """
-            Generates a list of Z3 expressions x_i = a_i * u_i + c_i
-            axis_lengths and centers are symbolic variables
-            """
-            # el_bound = solver.gammas(t)[dim] + solver.an_exp(t)[f'a{dim}'] #+ sin/cos term
-            # constraint = z3.And(el_bound > lower, el_bound < upper)
+        # 1. Constraint for the center point (gamma)
+        gamma_constraints = []
+        for d in range(dim):
+            lower, upper = bounds[d]
+            # Must satisfy: gamma_d < lower OR gamma_d > upper for AT LEAST ONE dimension d
+            gamma_constraints.append(z3.Or(gamma_t[d] < lower, gamma_t[d] > upper))
 
-            theta_grid = solver.sample_theta_grid(step_deg=15)
+        # Combine dimensional checks with z3.Or: The center is outside the box if it fails 
+        # containment in at least one dimension.
+        all_constraints.append(z3.Or(gamma_constraints))
 
-            symbolic_points = []
-            for thetas in theta_grid:
-                u = solver.generate_u_thetas(thetas)  # numerical vector
-                expr_point = [solver.an_exp(t)[f'a{dim+1}'] * u[dim] + solver.gammas(t)[dim]]
-                symbolic_points.append(expr_point)
+        # 2. Constraint for sampled points on the ellipsoid boundary
+        for thetas in theta_grid:
+            u = solver.generate_u_thetas(thetas)  # numerical vector for unit sphere
+            boundary_point_constraints = []
 
-            # print("CHECK: final", symbolic_points[0][1])
+            # The coordinates of a boundary point P are P_d = a_d * u_d + gamma_d
+            for d in range(dim):
+                lower, upper = bounds[d]
+                # P_d expression: a_{d+1} is used because 'a' indexing starts at 1 in solver.an_exp
+                P_d = solver.an_exp(t)[f'a{d+1}'] * u[d] + gamma_t[d]
+                
+                # Must satisfy: P_d < lower OR P_d > upper for AT LEAST ONE dimension d
+                boundary_point_constraints.append(z3.Or(P_d < lower, P_d > upper))
 
-            # Return dict of expressions by axis
-            coord_dict = {f'x{dim+1}': [p for p in symbolic_points]}
-            coord_name = f'x{dim+1}'          # e.g., x1, x2, x3...
-
-            for point_val in coord_dict[coord_name]:
-                # print(len(point_val))
-                constraint = z3.Or(point_val[0] <= lower, point_val[0] >= upper)
-                all_constraints.append(constraint)
+            # Combine dimensional checks with z3.Or: The boundary point is outside the box if it fails 
+            # containment in at least one dimension.
+            all_constraints.append(z3.Or(boundary_point_constraints))
 
     print("Added Avoid Constraints: ", solver.obstacles)
     end = time.time()
     solver.displayTime(start, end)
     return all_constraints
 
-
 start = time.time()
 
-S_constraints_list = reach(0, 3, 0, 3, 0, 3, 0, 1)
-O_constraints_list = avoid(3.5, 4.5, 3.5, 4.5, 3.5, 4.5, 3, 4)
-G_constraints_list = reach(5, 8, 5, 8, 5, 8, 5, 6)
+# S_constraints_list = reach(0, 3, 0, 3, 0, 3, 0, 1)
+# O_constraints_list = avoid(3.5, 4.5, 3.5, 4.5, 3.5, 4.5, 3, 4)
+# G_constraints_list = reach(5, 8, 5, 8, 5, 8, 5, 6)
+
+# for S in S_constraints_list:
+#     solver.solver.add(S)
+
+# for O in O_constraints_list:
+#     solver.solver.add(O)
+
+# for G in G_constraints_list:
+#     solver.solver.add(G)
+
+# solver.find_solution()
+
+# S_constraints_list = reach(0, 3, 0, 3, 0, 3, 0, 1)
+# T1_constraints_list = reach(8, 11, 16, 19, 12, 15, 6, 7)
+# T2_constraints_list = reach(16, 19, 6, 9, 4, 7, 12, 13)
+# T3_constraints_list = reach(24, 27, 16, 19, 12, 15, 18, 19)
+# T4_constraints_list = reach(32, 35, 6, 9, 4, 7, 24, 25)
+# G_constraints_list = reach(40, 43, 11, 14, 8, 11, 30, 31)
+# O_consraints_list = avoid(4, 38, 10, 15, 8, 11, 6, 17)
+
+# solver.find_solution()
+
+
+S_constraints_list = reach(0, 3, 0, 3, 0, 1)
+T1_constraints_list = reach(6, 9, 6, 9, 6, 7)
+T2_constraints_list = reach(12, 15, 6, 9, 6, 7)
+O_constraints_list = avoid(9, 12, 6, 9, 0, 15)
+G_constraints_list = reach(18, 21, 15, 18, 14, 15)
+
 
 for S in S_constraints_list:
     solver.solver.add(S)
@@ -665,4 +694,14 @@ for O in O_constraints_list:
 for G in G_constraints_list:
     solver.solver.add(G)
 
-solver.find_solution()
+T_choice = random.randint(1, 2)
+if T_choice == 1:
+    print("Choosing T1")
+    for T1 in T1_constraints_list:
+        solver.solver.add(T1)
+else:
+    print("Choosing T2")
+    for T2 in T2_constraints_list:
+        solver.solver.add(T2)
+
+tube1 = solver.find_solution()

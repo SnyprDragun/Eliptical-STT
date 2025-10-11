@@ -125,11 +125,11 @@ class STT_Solver():
             gd_x[i] = tube_gamma_dot[0]
             gd_y[i] = tube_gamma_dot[1]
 
-        print("gamma_x: ", x)
-        print("gamma_y: ", y)
+        # print("gamma_x: ", x)
+        # print("gamma_y: ", y)
 
-        print("gamma_dot for x = ", gd_x)
-        print("gamma_dot for y = ", gd_y)
+        # print("gamma_dot for x = ", gd_x)
+        # print("gamma_dot for y = ", gd_y)
 
         fig1, axs = plt.subplots(2, 1, figsize=(8, 8), constrained_layout=True)
         ax, bx = axs
@@ -323,7 +323,7 @@ class STT_Solver():
         self._y_finish = value
 
 
-solver = STT_Solver(degree=5, dimension=2, time_step=0.1, semi_minor_axis_range=[0.01, 0.5], semi_major_axis_range=[0.01, 0.5])
+solver = STT_Solver(degree=4, dimension=2, time_step=1, semi_minor_axis_range=[0.5, 0.51], semi_major_axis_range=[0.5, 0.51])
 
 
 def reach(x1, x2, y1, y2, t1, t2):
@@ -379,9 +379,26 @@ def avoid(x1, x2, y1, y2, t1, t2):
 
 start = time.time()
 
+# S_constraints_list = reach(0, 3, 0, 3, 0, 1)
+# O_constraints_list = avoid(3.5, 4.5, 3.5, 4.5, 3, 4)
+# G_constraints_list = reach(5, 8, 5, 8, 5, 6)
+
+# for S in S_constraints_list:
+#     solver.solver.add(S)
+
+# for O in O_constraints_list:
+#     solver.solver.add(O)
+
+# for G in G_constraints_list:
+#     solver.solver.add(G)
+
+# solver.find_solution()
+
 S_constraints_list = reach(0, 3, 0, 3, 0, 1)
-O_constraints_list = avoid(3.5, 4.5, 3.5, 4.5, 3, 4)
-G_constraints_list = reach(5, 8, 5, 8, 5, 6)
+T1_constraints_list = reach(6, 9, 6, 9, 6, 7)
+T2_constraints_list = reach(12, 15, 6, 9, 6, 7)
+G_constraints_list = reach(18, 21, 15, 18, 14, 18)
+O_constraints_list = avoid(9, 12, 6, 9, 3, 10)
 
 for S in S_constraints_list:
     solver.solver.add(S)
@@ -391,5 +408,15 @@ for O in O_constraints_list:
 
 for G in G_constraints_list:
     solver.solver.add(G)
+
+T_choice = 1#random.randint(1, 2)
+if T_choice == 1:
+    print("Choosing T1")
+    for T1 in T1_constraints_list:
+        solver.solver.add(T1)
+else:
+    print("Choosing T2")
+    for T2 in T2_constraints_list:
+        solver.solver.add(T2)
 
 solver.find_solution()
