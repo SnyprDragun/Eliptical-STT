@@ -688,7 +688,7 @@ for S in S_constraints_list:
 for O in O_constraints_list:
     solver1.solver.add(O)
 
-T_choice = 2#random.randint(1, 2)
+T_choice = random.randint(1, 2)
 if T_choice == 1:
     print("Choosing T1")
     for T1 in T1_constraints_list:

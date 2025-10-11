@@ -534,8 +534,7 @@ class STT_Solver():
             ax.scatter(points[:,0], points[:,1], points[:,2], s=2)
 
 
-# solver = STT_Solver(3, 3, 0.5, [0.5, 1], [0.8, 1.5], [0.8, 1.5])
-solver = STT_Solver(4, 2, 0.2, [0.5, 0.5], [0.5, 0.5])
+solver = STT_Solver(3, 3, 0.5, [0.5, 1], [0.8, 1.5], [0.8, 1.5])
 
 def reach(*args):
     """
@@ -652,38 +651,9 @@ def avoid(*args):
 
 start = time.time()
 
-# S_constraints_list = reach(0, 3, 0, 3, 0, 3, 0, 1)
-# O_constraints_list = avoid(3.5, 4.5, 3.5, 4.5, 3.5, 4.5, 3, 4)
-# G_constraints_list = reach(5, 8, 5, 8, 5, 8, 5, 6)
-
-# for S in S_constraints_list:
-#     solver.solver.add(S)
-
-# for O in O_constraints_list:
-#     solver.solver.add(O)
-
-# for G in G_constraints_list:
-#     solver.solver.add(G)
-
-# solver.find_solution()
-
-# S_constraints_list = reach(0, 3, 0, 3, 0, 3, 0, 1)
-# T1_constraints_list = reach(8, 11, 16, 19, 12, 15, 6, 7)
-# T2_constraints_list = reach(16, 19, 6, 9, 4, 7, 12, 13)
-# T3_constraints_list = reach(24, 27, 16, 19, 12, 15, 18, 19)
-# T4_constraints_list = reach(32, 35, 6, 9, 4, 7, 24, 25)
-# G_constraints_list = reach(40, 43, 11, 14, 8, 11, 30, 31)
-# O_consraints_list = avoid(4, 38, 10, 15, 8, 11, 6, 17)
-
-# solver.find_solution()
-
-
-S_constraints_list = reach(0, 3, 0, 3, 0, 1)
-T1_constraints_list = reach(6, 9, 6, 9, 6, 7)
-T2_constraints_list = reach(12, 15, 6, 9, 6, 7)
-O_constraints_list = avoid(9, 12, 6, 9, 0, 15)
-G_constraints_list = reach(18, 21, 15, 18, 14, 15)
-
+S_constraints_list = reach(0, 3, 0, 3, 0, 3, 0, 1)
+O_constraints_list = avoid(3.5, 4.5, 3.5, 4.5, 3.5, 4.5, 3, 4)
+G_constraints_list = reach(5, 8, 5, 8, 5, 8, 5, 6)
 
 for S in S_constraints_list:
     solver.solver.add(S)
@@ -694,14 +664,4 @@ for O in O_constraints_list:
 for G in G_constraints_list:
     solver.solver.add(G)
 
-T_choice = random.randint(1, 2)
-if T_choice == 1:
-    print("Choosing T1")
-    for T1 in T1_constraints_list:
-        solver.solver.add(T1)
-else:
-    print("Choosing T2")
-    for T2 in T2_constraints_list:
-        solver.solver.add(T2)
-
-tube1 = solver.find_solution()
+solver.find_solution()
