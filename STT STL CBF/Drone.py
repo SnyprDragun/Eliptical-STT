@@ -308,11 +308,11 @@ class STT_Solver():
                     self.an_solved[key] = solved_coeffs
 
                 self.store_csv(self.C_solved, self.an_solved)
-                # self.plot_for_nD(self.C_solved)
+                self.plot_for_nD(self.C_solved)
                 # self.print_equation(self.C_solved)
                 end = time.time()
                 self.displayTime(start, end)
-                # plt.show(block=True)
+                plt.show(block=True)
 
             else:
                 print("No solution found.")
@@ -670,179 +670,6 @@ def avoid(solver, *args):
     solver.displayTime(start, end)
     return all_constraints
 
-
-start = time.time()
-
-#----------------------------------------------------------------------------#
-#---------------------------------- TUBE 1 ----------------------------------#
-solver1 = STT_Solver(2, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
-
-S_constraints_list = reach(solver1, 0, 3, 0, 3, 0, 3, 0, 1)
-T1_constraints_list = reach(solver1, 6, 9, 6, 9, 3, 6, 6, 7)
-O_constraints_list = avoid(solver1, 12, 15, 12, 15, 0, 20, 6, 7)
-
-for S in S_constraints_list:
-    solver1.solver.add(S)
-
-for T1 in T1_constraints_list:
-    solver1.solver.add(T1)
-
-for O in O_constraints_list:
-    solver1.solver.add(O)
-
-tube1 = solver1.find_solution()
-
-#----------------------------------------------------------------------------#
-#---------------------------------- TUBE 2 ----------------------------------#
-solver2 = STT_Solver(2, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
-
-T1_constraints_list = reach(solver2, 6, 9, 6, 9, 3, 6, 6, 7)
-T2_constraints_list = reach(solver2, 12, 15, 21, 24, 3, 6, 12, 13)
-O_constraints_list = avoid(solver2, 12, 15, 12, 15, 0, 20, 5, 11)
-
-for T1 in T1_constraints_list:
-    solver2.solver.add(T1)
-
-for T2 in T2_constraints_list:
-    solver2.solver.add(T2)
-
-for O in O_constraints_list:
-    solver2.solver.add(O)
-
-solver2.join_constraint(tube1, solver1, 6)
-tube2 = solver2.find_solution()
-
-#----------------------------------------------------------------------------#
-#---------------------------------- TUBE 3 ----------------------------------#
-solver3 = STT_Solver(3, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
-
-T2_constraints_list = reach(solver3, 12, 15, 21, 24, 3, 6, 12, 13)
-T3_constraints_list = reach(solver3, 18, 21, 6, 9, 3, 6, 18, 19)
-O_constraints_list = avoid(solver3, 12, 15, 12, 15, 0, 20, 14, 17)
-
-for T2 in T2_constraints_list:
-    solver3.solver.add(T2)
-
-for T3 in T3_constraints_list:
-    solver3.solver.add(T3)
-
-for O in O_constraints_list:
-    solver3.solver.add(O)
-
-solver3.join_constraint(tube2, solver2, 12)
-tube3 = solver3.find_solution()
-
-#----------------------------------------------------------------------------#
-#---------------------------------- TUBE 4 ----------------------------------#
-solver4 = STT_Solver(3, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
-
-T3_constraints_list = reach(solver4, 18, 21, 6, 9, 3, 6, 18, 19)
-T4_constraints_list = reach(solver4, 6, 9, 6, 9, 3, 6, 24, 25)
-O_constraints_list = avoid(solver4, 12, 15, 12, 15, 0, 20, 20, 23)
-
-for T3 in T3_constraints_list:
-    solver4.solver.add(T3)
-
-for T4 in T4_constraints_list:
-    solver4.solver.add(T4)
-
-for O in O_constraints_list:
-    solver4.solver.add(O)
-
-solver4.join_constraint(tube3, solver3, 18)
-tube4 = solver4.find_solution()
-
-#----------------------------------------------------------------------------#
-#---------------------------------- TUBE 5 ----------------------------------#
-solver5 = STT_Solver(3, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
-
-T4_constraints_list = reach(solver5, 6, 9, 6, 9, 3, 6, 24, 25)
-T5_constraints_list = reach(solver5, 12, 15, 21, 24, 3, 6, 30, 31)
-O_constraints_list = avoid(solver5, 12, 15, 12, 15, 0, 20, 26, 29)
-
-for T4 in T4_constraints_list:
-    solver5.solver.add(T4)
-
-for T5 in T5_constraints_list:
-    solver5.solver.add(T5)
-
-for O in O_constraints_list:
-    solver5.solver.add(O)
-
-solver5.join_constraint(tube4, solver4, 24)
-tube5 = solver5.find_solution()
-
-#----------------------------------------------------------------------------#
-#---------------------------------- TUBE 6 ----------------------------------#
-solver6 = STT_Solver(3, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
-
-T5_constraints_list = reach(solver6, 12, 15, 21, 24, 3, 6, 30, 31)
-T6_constraints_list = reach(solver6, 18, 21, 6, 9, 3, 6, 36, 37)
-O_constraints_list = avoid(solver6, 12, 15, 12, 15, 0, 20, 32, 35)
-
-for T5 in T5_constraints_list:
-    solver6.solver.add(T5)
-
-for T6 in T6_constraints_list:
-    solver6.solver.add(T6)
-
-for O in O_constraints_list:
-    solver6.solver.add(O)
-
-solver6.join_constraint(tube5, solver5, 30)
-tube6 = solver6.find_solution()
-
-#----------------------------------------------------------------------------#
-#---------------------------------- TUBE 7 ----------------------------------#
-solver7 = STT_Solver(3, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
-
-T6_constraints_list = reach(solver7, 18, 21, 6, 9, 3, 6, 36, 37)
-T7_constraints_list = reach(solver7, 6, 9, 6, 9, 3, 6, 42, 43)
-O_constraints_list = avoid(solver7, 12, 15, 12, 15, 0, 20, 38, 41)
-
-for T6 in T6_constraints_list:
-    solver7.solver.add(T6)
-
-for T7 in T7_constraints_list:
-    solver7.solver.add(T7)
-
-for O in O_constraints_list:
-    solver7.solver.add(O)
-
-solver7.join_constraint(tube6, solver6, 36)
-tube7 = solver7.find_solution()
-
-#----------------------------------------------------------------------------#
-#---------------------------------- TUBE 8 ----------------------------------#
-solver8 = STT_Solver(4, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
-
-T7_constraints_list = reach(solver8, 6, 9, 6, 9, 3, 6, 42, 43)
-T8_constraints_list = reach(solver8, 0, 3, 0, 3, 0, 3, 48, 49)
-O_constraints_list = avoid(solver8, 12, 15, 12, 15, 0, 20, 44, 47)
-
-for T7 in T7_constraints_list:
-    solver8.solver.add(S)
-
-for T8 in T8_constraints_list:
-    solver8.solver.add(T8)
-
-for O in O_constraints_list:
-    solver8.solver.add(O)
-
-solver8.join_constraint(tube7, solver7, 42)
-tube8 = solver8.find_solution()
-#----------------------------------------------------------------------------#
-
-tubes = [[tube1, 0, 7],
-         [tube2, 6, 13],
-         [tube3, 12, 19],
-         [tube4, 18, 25],
-         [tube5, 24, 31],
-         [tube6, 30, 37],
-         [tube7, 36, 43],
-         [tube8, 42, 49]
-        ]
-
 def real_gammas(t, C_fin):
         '''method to calculate tube equations'''
         real_tubes = np.zeros(3)
@@ -912,10 +739,293 @@ def tube_plotter(C_array):
 
         plt.show()
 
-tube_plotter(tubes)
 
-# 1
-# 2   5   
-# 3   6
-# 4   7
-#         8
+start = time.time()
+
+##########################################################################################
+#-------------------------------------- PIECE-WISE --------------------------------------#
+##########################################################################################
+
+# #----------------------------------------------------------------------------#
+# #---------------------------------- TUBE 1 ----------------------------------#
+# solver1 = STT_Solver(2, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+# S_constraints_list = reach(solver1, 0, 3, 0, 3, 0, 3, 0, 1)
+# T1_constraints_list = reach(solver1, 6, 9, 6, 9, 3, 6, 6, 7)
+# O_constraints_list = avoid(solver1, 12, 15, 12, 15, 0, 20, 6, 7)
+
+# for S in S_constraints_list:
+#     solver1.solver.add(S)
+
+# for T1 in T1_constraints_list:
+#     solver1.solver.add(T1)
+
+# for O in O_constraints_list:
+#     solver1.solver.add(O)
+
+# tube1 = solver1.find_solution()
+
+# #----------------------------------------------------------------------------#
+# #---------------------------------- TUBE 2 ----------------------------------#
+# solver2 = STT_Solver(2, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+# T1_constraints_list = reach(solver2, 6, 9, 6, 9, 3, 6, 6, 7)
+# T2_constraints_list = reach(solver2, 12, 15, 21, 24, 3, 6, 12, 13)
+# O_constraints_list = avoid(solver2, 12, 15, 12, 15, 0, 20, 5, 11)
+
+# for T1 in T1_constraints_list:
+#     solver2.solver.add(T1)
+
+# for T2 in T2_constraints_list:
+#     solver2.solver.add(T2)
+
+# for O in O_constraints_list:
+#     solver2.solver.add(O)
+
+# solver2.join_constraint(tube1, solver1, 6)
+# tube2 = solver2.find_solution()
+
+# #----------------------------------------------------------------------------#
+# #---------------------------------- TUBE 3 ----------------------------------#
+# solver3 = STT_Solver(3, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+# T2_constraints_list = reach(solver3, 12, 15, 21, 24, 3, 6, 12, 13)
+# T3_constraints_list = reach(solver3, 18, 21, 6, 9, 3, 6, 18, 19)
+# O_constraints_list = avoid(solver3, 12, 15, 12, 15, 0, 20, 14, 17)
+
+# for T2 in T2_constraints_list:
+#     solver3.solver.add(T2)
+
+# for T3 in T3_constraints_list:
+#     solver3.solver.add(T3)
+
+# for O in O_constraints_list:
+#     solver3.solver.add(O)
+
+# solver3.join_constraint(tube2, solver2, 12)
+# tube3 = solver3.find_solution()
+
+# #----------------------------------------------------------------------------#
+# #---------------------------------- TUBE 4 ----------------------------------#
+# solver4 = STT_Solver(3, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+# T3_constraints_list = reach(solver4, 18, 21, 6, 9, 3, 6, 18, 19)
+# T4_constraints_list = reach(solver4, 6, 9, 6, 9, 3, 6, 24, 25)
+# O_constraints_list = avoid(solver4, 12, 15, 12, 15, 0, 20, 20, 23)
+
+# for T3 in T3_constraints_list:
+#     solver4.solver.add(T3)
+
+# for T4 in T4_constraints_list:
+#     solver4.solver.add(T4)
+
+# for O in O_constraints_list:
+#     solver4.solver.add(O)
+
+# solver4.join_constraint(tube3, solver3, 18)
+# tube4 = solver4.find_solution()
+
+# #----------------------------------------------------------------------------#
+# #---------------------------------- TUBE 5 ----------------------------------#
+# solver5 = STT_Solver(3, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+# T4_constraints_list = reach(solver5, 6, 9, 6, 9, 3, 6, 24, 25)
+# T5_constraints_list = reach(solver5, 12, 15, 21, 24, 3, 6, 30, 31)
+# O_constraints_list = avoid(solver5, 12, 15, 12, 15, 0, 20, 26, 29)
+
+# for T4 in T4_constraints_list:
+#     solver5.solver.add(T4)
+
+# for T5 in T5_constraints_list:
+#     solver5.solver.add(T5)
+
+# for O in O_constraints_list:
+#     solver5.solver.add(O)
+
+# solver5.join_constraint(tube4, solver4, 24)
+# tube5 = solver5.find_solution()
+
+# #----------------------------------------------------------------------------#
+# #---------------------------------- TUBE 6 ----------------------------------#
+# solver6 = STT_Solver(3, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+# T5_constraints_list = reach(solver6, 12, 15, 21, 24, 3, 6, 30, 31)
+# T6_constraints_list = reach(solver6, 18, 21, 6, 9, 3, 6, 36, 37)
+# O_constraints_list = avoid(solver6, 12, 15, 12, 15, 0, 20, 32, 35)
+
+# for T5 in T5_constraints_list:
+#     solver6.solver.add(T5)
+
+# for T6 in T6_constraints_list:
+#     solver6.solver.add(T6)
+
+# for O in O_constraints_list:
+#     solver6.solver.add(O)
+
+# solver6.join_constraint(tube5, solver5, 30)
+# tube6 = solver6.find_solution()
+
+# #----------------------------------------------------------------------------#
+# #---------------------------------- TUBE 7 ----------------------------------#
+# solver7 = STT_Solver(3, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+# T6_constraints_list = reach(solver7, 18, 21, 6, 9, 3, 6, 36, 37)
+# T7_constraints_list = reach(solver7, 6, 9, 6, 9, 3, 6, 42, 43)
+# O_constraints_list = avoid(solver7, 12, 15, 12, 15, 0, 20, 38, 41)
+
+# for T6 in T6_constraints_list:
+#     solver7.solver.add(T6)
+
+# for T7 in T7_constraints_list:
+#     solver7.solver.add(T7)
+
+# for O in O_constraints_list:
+#     solver7.solver.add(O)
+
+# solver7.join_constraint(tube6, solver6, 36)
+# tube7 = solver7.find_solution()
+
+# #----------------------------------------------------------------------------#
+# #---------------------------------- TUBE 8 ----------------------------------#
+# solver8 = STT_Solver(4, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+# T7_constraints_list = reach(solver8, 6, 9, 6, 9, 3, 6, 42, 43)
+# G_constraints_list = reach(solver8, 0, 3, 0, 3, 0, 3, 48, 49)
+# O_constraints_list = avoid(solver8, 12, 15, 12, 15, 0, 20, 44, 47)
+
+# for T7 in T7_constraints_list:
+#     solver8.solver.add(S)
+
+# for G in G_constraints_list:
+#     solver8.solver.add(G)
+
+# for O in O_constraints_list:
+#     solver8.solver.add(O)
+
+# solver8.join_constraint(tube7, solver7, 42)
+# tube8 = solver8.find_solution()
+# #----------------------------------------------------------------------------#
+
+# tubes = [[tube1, 0, 7],
+#          [tube2, 6, 13],
+#          [tube3, 12, 19],
+#          [tube4, 18, 25],
+#          [tube5, 24, 31],
+#          [tube6, 30, 37],
+#          [tube7, 36, 43],
+#          [tube8, 42, 49]
+#         ]
+
+##########################################################################################
+##########################################################################################
+##########################################################################################
+
+
+
+##########################################################################################
+#-------------------------------------- CONTINUOUS --------------------------------------#
+##########################################################################################
+
+#----------------------------------------------------------------------------#
+#---------------------------------- TUBE 1 ----------------------------------#
+solver1 = STT_Solver(2, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+S_constraints_list = reach(solver1, 0, 3, 0, 3, 0, 3, 0, 1)
+T1_constraints_list = reach(solver1, 6, 9, 6, 9, 3, 6, 6, 7)
+T2_constraints_list = reach(solver1, 12, 15, 21, 24, 3, 6, 12, 13)
+O_constraints_list = avoid(solver1, 12, 15, 12, 15, 0, 20, 0, 11)
+
+for S in S_constraints_list:
+    solver1.solver.add(S)
+
+for T1 in T1_constraints_list:
+    solver1.solver.add(T1)
+
+for T2 in T2_constraints_list:
+    solver1.solver.add(T2)
+
+for O in O_constraints_list:
+    solver1.solver.add(O)
+
+tube1 = solver1.find_solution()
+
+#----------------------------------------------------------------------------#
+#---------------------------------- TUBE 2 ----------------------------------#
+solver2 = STT_Solver(4, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+T2_constraints_list = reach(solver2, 12, 15, 21, 24, 3, 6, 12, 13)
+T3_constraints_list = reach(solver2, 18, 21, 6, 9, 3, 6, 18, 19)
+T4_constraints_list = reach(solver2, 6, 9, 6, 9, 3, 6, 24, 25)
+O_constraints_list = avoid(solver2, 12, 15, 12, 15, 0, 20, 14, 23)
+
+for T2 in T2_constraints_list:
+    solver2.solver.add(T2)
+
+for T3 in T3_constraints_list:
+    solver2.solver.add(T3)
+
+for T4 in T4_constraints_list:
+    solver2.solver.add(T4)
+
+for O in O_constraints_list:
+    solver2.solver.add(O)
+
+solver2.join_constraint(tube1, solver1, 12)
+tube2 = solver2.find_solution()
+
+#----------------------------------------------------------------------------#
+#---------------------------------- TUBE 3 ----------------------------------#
+solver3 = STT_Solver(4, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+T4_constraints_list = reach(solver3, 6, 9, 6, 9, 3, 6, 24, 25)
+T5_constraints_list = reach(solver3, 12, 15, 21, 24, 3, 6, 30, 31)
+T6_constraints_list = reach(solver3, 18, 21, 6, 9, 3, 6, 36, 37)
+O_constraints_list = avoid(solver3, 12, 15, 12, 15, 0, 20, 26, 35)
+
+for T4 in T4_constraints_list:
+    solver3.solver.add(T4)
+
+for T5 in T5_constraints_list:
+    solver3.solver.add(T5)
+
+for T6 in T6_constraints_list:
+    solver3.solver.add(T6)
+
+for O in O_constraints_list:
+    solver3.solver.add(O)
+
+solver3.join_constraint(tube2, solver2, 24)
+tube3 = solver3.find_solution()
+
+#----------------------------------------------------------------------------#
+#---------------------------------- TUBE 4 ----------------------------------#
+solver4 = STT_Solver(4, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
+
+T6_constraints_list = reach(solver4, 18, 21, 6, 9, 3, 6, 36, 37)
+T7_constraints_list = reach(solver4, 6, 9, 6, 9, 3, 6, 42, 43)
+G_constraints_list = reach(solver4, 0, 3, 0, 3, 0, 3, 48, 49)
+O_constraints_list = avoid(solver4, 12, 15, 12, 15, 0, 20, 38, 47)
+
+for T6 in T6_constraints_list:
+    solver4.solver.add(T6)
+
+for T7 in T7_constraints_list:
+    solver4.solver.add(T7)
+
+for G in G_constraints_list:
+    solver4.solver.add(G)
+
+for O in O_constraints_list:
+    solver4.solver.add(O)
+
+solver4.join_constraint(tube3, solver3, 36)
+tube4 = solver4.find_solution()
+#----------------------------------------------------------------------------#
+
+tubes = [[tube1, 0, 13],
+         [tube2, 12, 25],
+         [tube3, 24, 37],
+         [tube4, 36, 49]
+        ]
+
+tube_plotter(tubes)
