@@ -308,11 +308,11 @@ class STT_Solver():
                     self.an_solved[key] = solved_coeffs
 
                 self.store_csv(self.C_solved, self.an_solved)
-                self.plot_for_nD(self.C_solved)
+                # self.plot_for_nD(self.C_solved)
                 # self.print_equation(self.C_solved)
                 end = time.time()
                 self.displayTime(start, end)
-                plt.show(block=True)
+                # plt.show(block=True)
 
             else:
                 print("No solution found.")
@@ -1021,6 +1021,8 @@ for O in O_constraints_list:
 solver4.join_constraint(tube3, solver3, 36)
 tube4 = solver4.find_solution()
 #----------------------------------------------------------------------------#
+
+print(time.time() - start, "seconds")
 
 tubes = [[tube1, 0, 13],
          [tube2, 12, 25],
