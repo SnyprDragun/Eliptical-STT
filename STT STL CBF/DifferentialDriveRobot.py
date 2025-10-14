@@ -308,11 +308,11 @@ class STT_Solver():
                     self.an_solved[key] = solved_coeffs
 
                 self.store_csv(self.C_solved, self.an_solved)
-                # self.plot_for_nD(self.C_solved)
+                self.plot_for_nD(self.C_solved)
                 # self.print_equation(self.C_solved)
                 end = time.time()
                 self.displayTime(start, end)
-                # plt.show(block=True)
+                plt.show(block=True)
 
             else:
                 print("No solution found.")
@@ -670,6 +670,75 @@ def avoid(solver, *args):
     solver.displayTime(start, end)
     return all_constraints
 
+def real_gammas(t, C_fin):
+        '''method to calculate tube equations'''
+        real_tubes = np.zeros(3)
+        degree = int((len(C_fin) / (3)) - 1)
+
+        for i in range(3):
+            power = 0
+            for j in range(degree + 1): #each tube eq has {degree+1} terms
+                real_tubes[i] += ((C_fin[j + i * (degree + 1)]) * (t ** power))
+                power += 1
+        return real_tubes
+
+def real_gamma_dot(t, C_fin):
+    '''method to calculate tube equations'''
+    real_tubes = np.zeros(3)
+    degree = int((len(C_fin) / (3)) - 1)
+
+    for i in range(3):
+        power = 0
+        for j in range(degree + 1):
+            if power < 1:
+                real_tubes[i] += 0
+                power += 1
+            else:
+                real_tubes[i] += power * ((C_fin[j + i * (degree + 1)]) * (t ** (power - 1)))
+                power += 1
+    return real_tubes
+
+def tube_plotter(C_array):
+    any_empty = any(t[0] is None or (hasattr(t[0], '__len__') and len(t[0]) == 0) for t in C_array)
+
+    if not any_empty:
+        fig, axs = plt.subplots(3, 1, figsize=(8, 8), constrained_layout=True)
+        ax, bx, cx= axs
+
+        for tube in C_array:
+            step = 0.1
+            start = tube[1]
+            end = tube[2]
+            time_range = int((end - start + step)/step)
+
+            x = np.zeros(time_range)
+            y = np.zeros(time_range)
+            z = np.zeros(time_range)
+
+            gd_x = np.zeros(time_range)
+            gd_y = np.zeros(time_range)
+            gd_z = np.zeros(time_range)
+
+            for i in range(time_range):
+                tube_gamma = real_gammas(start + i * step, tube[0])
+                x[i] = tube_gamma[0]
+                y[i] = tube_gamma[1]
+                z[i] = tube_gamma[2]
+
+                tube_gamma_dot = real_gamma_dot(start + i * step, tube[0])
+                gd_x[i] = tube_gamma_dot[0]
+                gd_y[i] = tube_gamma_dot[1]
+                gd_z[i] = tube_gamma_dot[2]
+
+            t = np.linspace(start, end, time_range)
+            print("range: ", time_range, "\nstart: ", start, "\nfinish: ", end, "\nstep: ", step)
+
+            ax.plot(t, x)
+            bx.plot(t, y)
+            cx.plot(t, z)
+
+        plt.show()
+
 
 start = time.time()
 
@@ -726,12 +795,25 @@ else:
 
 solver2.join_constraint(tube1, solver1, 6)
 tube2 = solver2.find_solution()
+
+#----------------------------------------------------------------------------#
+#---------------------------------- TUBE 3 ----------------------------------#
+solver3 = STT_Solver(3, 2, 0.1, [0.5, 0.5], [0.5, 0.5])
+
+G_constraints_list = reach(solver3, 18, 21, 15, 18, 14, 20)
+
+for G in G_constraints_list:
+    solver3.solver.add(G)
+
+solver3.join_constraint(tube2, solver2, 14)
+tube3 = solver3.find_solution()
 #----------------------------------------------------------------------------#
 
 print(time.time() - start, "seconds")
 
 tubes = [[tube1, 0, 7],
-         [tube2, 6, 15]
+         [tube2, 6, 15],
+         [tube3, 14, 18]
         ]
 
 def real_gammas(t, C_fin):

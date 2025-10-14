@@ -931,8 +931,8 @@ start = time.time()
 solver1 = STT_Solver(2, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
 
 S_constraints_list = reach(solver1, 0, 3, 0, 3, 0, 3, 0, 1)
-T1_constraints_list = reach(solver1, 6, 9, 6, 9, 3, 6, 6, 7)
-T2_constraints_list = reach(solver1, 12, 15, 21, 24, 3, 6, 12, 13)
+T1_constraints_list = reach(solver1, 6, 9, 6, 9, 6, 9, 6, 7)
+T2_constraints_list = reach(solver1, 12, 15, 21, 24, 9, 12, 12, 13)
 O_constraints_list = avoid(solver1, 12, 15, 12, 15, 0, 20, 0, 11)
 
 for S in S_constraints_list:
@@ -953,9 +953,9 @@ tube1 = solver1.find_solution()
 #---------------------------------- TUBE 2 ----------------------------------#
 solver2 = STT_Solver(4, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
 
-T2_constraints_list = reach(solver2, 12, 15, 21, 24, 3, 6, 12, 13)
-T3_constraints_list = reach(solver2, 18, 21, 6, 9, 3, 6, 18, 19)
-T4_constraints_list = reach(solver2, 6, 9, 6, 9, 3, 6, 24, 25)
+T2_constraints_list = reach(solver2, 12, 15, 21, 24, 9, 12, 12, 13)
+T3_constraints_list = reach(solver2, 18, 21, 6, 9, 8, 11, 18, 19)
+T4_constraints_list = reach(solver2, 6, 9, 6, 9, 6, 9, 24, 25)
 O_constraints_list = avoid(solver2, 12, 15, 12, 15, 0, 20, 14, 23)
 
 for T2 in T2_constraints_list:
@@ -977,9 +977,9 @@ tube2 = solver2.find_solution()
 #---------------------------------- TUBE 3 ----------------------------------#
 solver3 = STT_Solver(4, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
 
-T4_constraints_list = reach(solver3, 6, 9, 6, 9, 3, 6, 24, 25)
-T5_constraints_list = reach(solver3, 12, 15, 21, 24, 3, 6, 30, 31)
-T6_constraints_list = reach(solver3, 18, 21, 6, 9, 3, 6, 36, 37)
+T4_constraints_list = reach(solver3, 6, 9, 6, 9, 6, 9, 24, 25)
+T5_constraints_list = reach(solver3, 12, 15, 21, 24, 9, 12, 30, 31)
+T6_constraints_list = reach(solver3, 18, 21, 6, 9, 8, 11, 36, 37)
 O_constraints_list = avoid(solver3, 12, 15, 12, 15, 0, 20, 26, 35)
 
 for T4 in T4_constraints_list:
@@ -1001,8 +1001,8 @@ tube3 = solver3.find_solution()
 #---------------------------------- TUBE 4 ----------------------------------#
 solver4 = STT_Solver(4, 3, 0.5, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5])
 
-T6_constraints_list = reach(solver4, 18, 21, 6, 9, 3, 6, 36, 37)
-T7_constraints_list = reach(solver4, 6, 9, 6, 9, 3, 6, 42, 43)
+T6_constraints_list = reach(solver4, 18, 21, 6, 9, 8, 11, 36, 37)
+T7_constraints_list = reach(solver4, 6, 9, 6, 9, 6, 9, 42, 43)
 G_constraints_list = reach(solver4, 0, 3, 0, 3, 0, 3, 48, 49)
 O_constraints_list = avoid(solver4, 12, 15, 12, 15, 0, 20, 38, 47)
 
