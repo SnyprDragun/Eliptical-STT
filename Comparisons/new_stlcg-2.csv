@@ -15,3 +15,5 @@ Tube Coefficients,Value,a1,a2
 "C_x2,3",0.02620120031726382,,
 Time Taken,0.18752121925354004
 Join at t=5s
+
+Total time taken: 0.2423772812 seconds
