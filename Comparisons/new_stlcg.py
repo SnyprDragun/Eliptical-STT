@@ -309,11 +309,11 @@ class STT_Solver():
                     self.an_solved[key] = solved_coeffs
 
                 self.store_csv(self.C_solved, self.an_solved)
-                # self.plot_for_nD(self.C_solved)
+                self.plot_for_nD(self.C_solved)
                 # self.print_equation(self.C_solved)
                 print(f"Solver time: {end - start} seconds")
                 self.displayTime(start, end)
-                # plt.show(block=True)
+                plt.show(block=True)
 
             else:
                 print("No solution found.")
@@ -751,30 +751,30 @@ solver1 = STT_Solver(1, 2, 0.5, [0.1, 0.1], [0.1, 0.1])
 S_constraints_list = reach(solver1, -1.15, -0.85, -1.15, -0.85, 0, 1)
 R_constraints_list = reach(solver1, 0, 0.8, -1, -0.5, 3, 5)
 Y_constraints_list = reach(solver1, -1, -0.7, -0.2, 0.5, 3, 5)
-B_constraints_list = avoid(solver1, -0.4, 0.4, -0.4, 0.4, 0, 10)
-G_constraints_list = reach(solver1, 0.2, 0.6, 0.8, 1.2, 7, 10)
+B_constraints_list = avoid(solver1, -0.4, 0.48, -0.4, 0.4, 0, 10)
+G_constraints_list = reach(solver1, 0.2, 0.6, 0.7, 1.2, 7, 10)
 
 for S in S_constraints_list:
     solver1.solver.add(S)
 
-# for R in R_constraints_list:
-#     solver1.solver.add(R)
+for R in R_constraints_list:
+    solver1.solver.add(R)
 
-for Y in Y_constraints_list:
-    solver1.solver.add(Y)
+# for Y in Y_constraints_list:
+#     solver1.solver.add(Y)
 
 tube1 = solver1.find_solution()
 
 #----------------------------------------------------------------------------#
 #---------------------------------- TUBE 2 ----------------------------------#
-solver2 = STT_Solver(3, 2, 0.5, [0.1, 0.1], [0.1, 0.1])
+solver2 = STT_Solver(4, 2, 0.5, [0.1, 0.1], [0.1, 0.1])
 
 S_constraints_list = reach(solver2, -1.15, -0.85, -1.15, -0.85, 0, 1)
 R_constraints_list = reach(solver2, 0, 0.8, -1, -0.5, 3, 5)
 Y_constraints_list = reach(solver2, -1, -0.7, -0.2, 0.5, 3, 5)
 B_constraints_list = avoid(solver2, -0.4, 0.4, -0.4, 0.4, 0, 10)
-G_constraints_list = avoid(solver2, 0.2, 0.6, 0.8, 1.2, 7, 10)
-Goal_constraints_list = reach(solver2, 0.45, 0.75, 0.45, 0.75, 9, 10)
+G_constraints_list = reach(solver2, 0.2, 0.6, 0.7, 1.2, 7, 10)
+# Goal_constraints_list = reach(solver2, 0.45, 0.75, 0.45, 0.75, 9, 10)
 
 for B in B_constraints_list:
     solver2.solver.add(B)
@@ -782,15 +782,15 @@ for B in B_constraints_list:
 for G in G_constraints_list:
     solver2.solver.add(G)
 
-for Goal in Goal_constraints_list:
-    solver2.solver.add(Goal)
+# for Goal in Goal_constraints_list:
+#     solver2.solver.add(Goal)
 
-solver2.join_constraint(tube1, solver1, 5)
+solver2.join_constraint(tube1, solver1, 4)
 tube2 = solver2.find_solution()
 #----------------------------------------------------------------------------#
 
 tubes = [[tube1, 0, 5],
-         [tube2, 5, 10]
+         [tube2, 4, 10]
         ]
 
 def real_gammas(t, C_fin):
